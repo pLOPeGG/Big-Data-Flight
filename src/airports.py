@@ -4,6 +4,11 @@ from scipy.spatial import cKDTree
 from typing import Dict, Tuple
 
 
+# Data for the airports can be found at "http://www.partow.net/downloads/GlobalAirportDatabase_CountryDecLatLon.zip"
+# and extract it in the data directory (csv file)
+# Append a header line to the csv for columns titles:
+# COUNTRY,Lat,Long
+
 def get_airports(file) -> pd.DataFrame:
     air_loc = pd.read_csv(file)
     air_loc = air_loc[(air_loc['Lat'] > 36) & (air_loc['Lat'] < 70) &
