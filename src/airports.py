@@ -5,10 +5,14 @@ from typing import Dict, Tuple
 from haversine import haversine
 import time
 
-# Data for the airports can be found at "http://www.partow.net/downloads/GlobalAirportDatabase_CountryDecLatLon.zip"
+# Data for the airports can be found at "http://www.partow.net/downloads/GlobalAirportDatabase.zip"
+# On website "http://www.partow.net/miscellaneous/airportdatabase/index.html#Downloads"
 # and extract it in the data directory (csv file)
 # Append a header line to the csv for columns titles:
 # COUNTRY,Lat,Long
+
+
+METERS_TO_FEET = 3.280839895
 
 
 class AirportFinder():
@@ -36,7 +40,7 @@ class AirportFinder():
             np.cos(rad[0]) * np.sin(lng * 0.5) ** 2
         d = np.sin(lat * 0.5) ** 2 + add0
 
-        return self.deg_airport_l[np.argmin(d)]
+        return tuple(self.deg_airport_l[np.argmin(d)])
 
 
 def get_airports(file) -> pd.DataFrame:
@@ -47,20 +51,30 @@ def get_airports(file) -> pd.DataFrame:
 def get_european_airports() -> Tuple[Dict[Tuple[float, float], str],
                                      np.ndarray,
                                      AirportFinder]:
-    air_info = get_airports("./data/gadb_country_declatlon.csv")
+    air_info = get_airports("./data/GlobalAirportDatabase.csv")
+
     air_info = air_info[(air_info['Lat'] > 36) & (air_info['Lat'] < 70) &
                         (air_info['Long'] > -26) & (air_info['Long'] < 34)]
-    air_dict = {(i[1], i[2]): i[0] for i in air_info.values}
-    air_loc = np.array(air_info.values[:, 1:], dtype='float64')
+
+    air_dict = {(i[14], i[15]): {"Code": i[1],
+                                 "Name": i[2],
+                                 "City": i[3],
+                                 "Country": i[4],
+                                 "Alt": i[13] * METERS_TO_FEET,
+                                 "Lat": i[14],
+                                 "Long": i[15]} for i in air_info.values}
+
+    air_loc = np.array(air_info.values[:, 14:], dtype='float64')
     air_finder = AirportFinder(air_loc)
+
     return air_dict, air_loc, air_finder
 
 
 def compute_KD(points) -> cKDTree:
-    """ DEPRECATED USE AIRFINDER FOR ACCURACY	
-    Beware, this is a KDTree working with Euclidean distance. 
+    """ DEPRECATED USE AIRFINDER FOR ACCURACY
+    Beware, this is a KDTree working with Euclidean distance.
     This is not perfect for Spherical surface and might give wrong answers (?)
-    Yes it does -> any other solution ? 
+    Yes it does -> any other solution ?
     """
     return cKDTree(points)
 
@@ -98,8 +112,8 @@ def benchmark():
 def main():
     air_dict, air_loc, air_finder = get_european_airports()
 
-    point = [37.478439, -6.047272]
-    print(air_finder.closest_airport(point))
+    point = [37.105812, -5.226089]
+    print(air_dict[air_finder.closest_airport(point)])
     pass
 
 
