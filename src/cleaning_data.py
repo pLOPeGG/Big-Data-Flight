@@ -6,9 +6,6 @@ import pandas as pd
 from mpl_toolkits.basemap import Basemap
 
 
-
-
-
 def main():
     # plt.figure(figsize=(8, 8))
     # m = Basemap(projection='ortho', resolution=None, lat_0=45, lon_0=0)
@@ -22,23 +19,19 @@ def main():
     df = df.filter((df.Lat > 36) & (df.Lat < 70) &
                    (df.Long > -26) & (df.Long < 34))
 
-    df_reduce = df.select(df.Id, df.Lat, df.Long, df.PosTime, df.Alt, df.Gnd, df.Cos)
-    df_reduce = df_reduce.groupBy(df_reduce.Id).agg(F.collect_list(df.Lat).alias("Lat"),
-                                                    F.collect_list(
-                                                        df.Long).alias("Long"),
-                                                    F.collect_list(df.PosTime).alias("Time"),
-                                                    F.collect_list(
-                                                        df.Alt).alias("Alt"),
-                                                    F.collect_list(
-                                                        df.Gnd).alias("Gnd"),
-                                                    F.collect_list(df.Cos).alias("Cos"))
+    df_reduce = df.select(df.Id, df.Lat, df.Long,
+                          df.PosTime, df.Alt, df.Gnd, df.Cos)
+    df_reduce = df_reduce \
+        .groupBy(df_reduce.Id) \
+        .agg(F.collect_list(df.Lat).alias("Lat"),
+             F.collect_list(df.Long).alias("Long"),
+             F.collect_list(df.PosTime).alias("Time"),
+             F.collect_list(df.Alt).alias("Alt"),
+             F.collect_list(df.Gnd).alias("Gnd"))
+    df_size = df_reduce.select('*', F.size(df_reduce.Lat).alias("Size"))
+    df_sorted = df_size.orderBy(df_size["Size"].desc())
 
-    print(base_df.count())
-    print(df.count())
-    print(df_reduce.count())
-
-    print(df_reduce.take(1))
-    record = df_reduce.take(1)[0]
+    record = df_sorted.take(1)[0]
     lat, long, time = record.Lat, record.Long, record.Time
 
     _, lat, long = zip(*sorted(zip(time, lat, long)))
