@@ -21,10 +21,11 @@ class AirportFinder():
     Might not scale well with larger numbers!
     """
 
-    def __init__(self, airport_l: np.ndarray):
+    def __init__(self, airport_l: np.ndarray, max_height: float):
         super().__init__()
         self.deg_airport_l = airport_l
         self.airport_l = np.deg2rad(airport_l)
+        self.max_height = max_height
 
     def closest_airport(self, point: np.ndarray) -> np.ndarray:
         """ Finds the closest airport to the point
@@ -65,7 +66,8 @@ def get_european_airports() -> Tuple[Dict[Tuple[float, float], str],
                                  "Long": i[15]} for i in air_info.values}
 
     air_loc = np.array(air_info.values[:, 14:], dtype='float64')
-    air_finder = AirportFinder(air_loc)
+    air_finder = AirportFinder(air_loc, 
+                               max([v["Alt"] for v in air_dict.values()]))
 
     return air_dict, air_loc, air_finder
 
@@ -112,8 +114,9 @@ def benchmark():
 def main():
     air_dict, air_loc, air_finder = get_european_airports()
 
-    point = [37.105812, -5.226089]
+    point = [47.486541, 8.530039]
     print(air_dict[air_finder.closest_airport(point)])
+    print(sorted([a["Alt"] for a in air_dict.values()]))
     pass
 
 
