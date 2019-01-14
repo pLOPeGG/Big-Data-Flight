@@ -67,7 +67,7 @@ def get_european_airports() -> Tuple[Dict[Tuple[float, float], str],
 
     air_loc = np.array(air_info.values[:, 14:], dtype='float64')
     air_finder = AirportFinder(air_loc, 
-                               max([v["Alt"] for v in air_dict.values()]))
+                               max([v["Alt"] for v in air_dict.values()]) * 1.1)
 
     return air_dict, air_loc, air_finder
 

@@ -1,14 +1,16 @@
 from pyspark import SparkContext, RDD
-from pyspark.sql import SparkSession, DataFrame, functions as F
+from pyspark.sql import SparkSession, DataFrame, functions as F, Row
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from mpl_toolkits.basemap import Basemap
 
-from airports import AirportFinder
+from airports import AirportFinder, get_european_airports
 
 
 sc = SparkContext()
+sc.addPyFile('src/utils.py')
+sc.addPyFile('src/airports.py')
 spark = SparkSession(sc)
 
 labels = ["Lat", "Long", "PosTime", "GAlt", "Spd"]
@@ -41,7 +43,7 @@ def group_icao(df: DataFrame, cols, cols_names):
     return df_group
 
 
-def filter_big_time_step(rdd: RDD, min_step: int, max_step: int) -> RDD:
+def filter_big_time_step(rdd: RDD, min_step: float, max_step: float) -> RDD:
     """ Some plane sometimes pass out for a long time (1k sec and more) without moving.
     We remove those planes from the records (SHALL WE ???)
     """
@@ -66,41 +68,71 @@ def filter_big_time_step(rdd: RDD, min_step: int, max_step: int) -> RDD:
     pass
 
 
-def flatten_trips(rdd: RDD, airport: AirportFinder, sticky=float("inf"): float) -> RDD:
-    def map_split_trips(record):
+def flatten_trips(rdd: RDD, airport: AirportFinder, air_info, sticky: float = float("inf")) -> RDD:
+    def flatmap_split_trips(record, airport=airport, air_info=air_info, sticky=sticky):
         """ Split the record for each plane in multiple records:
         One for each trip the plane took.
         """
-        alt = record.Alt
+        alt, lat, long, speed, time = record.Alt, record.Lat, record.Long, record.Speed, record.Time
 
         # Ideas: - Apply low frequency filter on the altitude to
         #          remove noise from data ?
         #        - Do the same on Speed values ?
-        #        - 
 
         # Get local minimums of the altitude -> this might be take off and landing
-        split_indices = np.gradient(np.sign(np.gradient(alt))) > 0 \
-            and np.array(alt) < airport.max_height
+        split_indices = [i for i, (a, b) in enumerate(zip(np.gradient(np.sign(np.gradient(alt))) > 0,
+                                                          np.array(alt) < airport.max_height))
+                         if a and b]
 
-        split_indices = [i for i in split_indices if airport.closest_airport(i) < sticky]
+        corresponding_airports = [airport.closest_airport((lat[i], long[i]))
+                                  for i in split_indices]
 
-        couples = [(i, j) for i, j in zip(alt[:-1], alt[1:])]
+        # TODO: Here compute distance airport - position and validate the landing.
+        # TODO: cleaning from and to must be different
+        # TODO: A flight must at least last a few minutes
+        
+        # split_indices = [i for i in split_indices]
 
+        couples = [(i, j) for i, j in zip(
+            split_indices[:-1], split_indices[1:]) if i+1 != j]
 
-        pass
-
-    pass
+        trip_l = []
+        for k, (i, j) in enumerate(couples):
+            air_from = air_info[corresponding_airports[k]]
+            air_to = air_info[corresponding_airports[k+1]]
+            row = Row(Icao=record.Icao,
+                      From=air_from,
+                      To=air_to,
+                      Lat=lat[i:j+1],
+                      Long=long[i:j+1],
+                      Alt=alt[i:j+1],
+                      Speed=speed[i:j+1],
+                      Time=time[i:j+1],
+                      )
+            trip_l.append(row)
+        return trip_l
+    print("*" * 1000)
+    print("HERE")
+    rdd = sc.parallelize(rdd.take(1))
+    print(rdd.count())
+    print(rdd.take(1))
+    rdd = rdd.flatMap(flatmap_split_trips)
+    return rdd
 
 
 def get_clean_data(file) -> RDD:
+    air_dict, air_loc, air_finder = get_european_airports()  # All info about airports
     df = filter_data(file)  # European filter
 
     df_sorted = group_icao(df,
                            labels,
                            labels_names)  # Group by ICAO and sort time
 
-    rdd = df_sorted.rdd
-    # rdd = filter_big_time_step(rdd, 0, 500000)  # Filter out ill formed time steps
+    rdd = df_sorted.rdd  # Return a rdd where each record is a Row
+
+    # rdd = filter_big_time_step(rdd, -1, float("inf"))  # Filter out ill formed time steps
+
+    rdd = flatten_trips(rdd, air_finder, air_dict)
     return rdd
 
 
@@ -118,7 +150,7 @@ def draw_records(rdd: RDD, n: int):
             lat1, long1, t1, alt1, s1 = x1
             lat2, long2, t2, alt2, s2 = x2
             print((lat1, long1, alt1, s1), (lat2, long2, alt2, s2), (t2-t1)/1000)
-            m.drawgreatcircle(long1, lat1, long2, lat2, linewidth=1, color='b')
+            m.drawgreatcircle(long1, lat1, long2, lat2, linewidth=1)
     m.drawcoastlines()
     m.fillcontinents()
     # draw parallels
@@ -129,18 +161,12 @@ def draw_records(rdd: RDD, n: int):
 
 
 def main():
-    file_json = "./data/2017-01-01/2017-01-01-*.json"
-    df = filter_data(file_json)
+    file_json = "./data/2017-01-01/2017-01-01-1*.json"
+    rdd = get_clean_data(file_json)
 
-    df_sorted = group_icao(df,
-                           labels,
-                           labels_names)
+    print(rdd.take(10))
 
-    rdd = df_sorted.rdd
-
-    rdd = filter_big_time_step(rdd, 0, 1000000)
-
-    draw_records(rdd, 10)
+    # draw_records(rdd, 10)
 
     """
     record, min_step, max_step = rdd.take(1)[0]
