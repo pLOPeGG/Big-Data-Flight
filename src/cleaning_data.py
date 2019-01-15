@@ -20,7 +20,7 @@ labels_names = ["Lat", "Long", "Time", "Alt", "Speed"]
 
 def filter_data(input_json: str):
     base_df = spark.read.json(input_json)
-    print(f"Loaded {input_json}: {base_df.count()} records")
+    # print(f"Loaded {input_json}: {base_df.count()} records")
     df = base_df.filter(base_df.Lat.isNotNull() & base_df.Long.isNotNull() &
                         base_df.PosTime.isNotNull() & base_df.GAlt.isNotNull() &
                         base_df.Spd.isNotNull())
