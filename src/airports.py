@@ -96,7 +96,7 @@ def benchmark():
         for y in np.linspace(-25, 40, 100):
             point = [x, y]
             af_airport = air_finder.closest_airport(point)
-    print(f"AirportFinder took {time.clock()-beg}sec to run")
+    # print(f"AirportFinder took {time.clock()-beg}sec to run")
 
     beg = time.clock()
     for x in np.linspace(40, 70, 100):
@@ -104,7 +104,7 @@ def benchmark():
             point = [x, y]
             haversine_airport = air_loc[np.argmin(
                 [haversine(point, p) for p in air_loc])]
-    print(f"Haversine function took {time.clock()-beg}sec to run")
+    # print(f"Haversine function took {time.clock()-beg}sec to run")
 
     beg = time.clock()
     for x in np.linspace(40, 70, 100):
@@ -112,7 +112,7 @@ def benchmark():
             point = [x, y]
             _, index = tree.query([point])
             tree_airport = tree.data[index[0]]
-    print(f"cDKTree took {time.clock()-beg}sec to run")
+    # print(f"cDKTree took {time.clock()-beg}sec to run")
     pass
 
 

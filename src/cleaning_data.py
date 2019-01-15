@@ -26,11 +26,10 @@ def filter_data(input_json: str):
                         base_df.Spd.isNotNull())
     df = df.filter((df.Lat > 36) & (df.Lat < 70) &
                    (df.Long > -26) & (df.Long < 34))
-    print(
-        f"Applied Positional and European filters: remains {df.count()} records")
+    # print(f"Applied Positional and European filters: remains {df.count()} records")
 
     df = df.filter(~df.Mlat)
-    print(f"Applied GPS Filter: remains {df.count()} records")
+    # print(f"Applied GPS Filter: remains {df.count()} records")
     return df
     pass
 
@@ -41,7 +40,9 @@ def group_icao(df: DataFrame, cols, cols_names):
     df_group = df.groupBy(df.Icao)\
                  .agg(*[F.collect_list(df[c]).alias(c_name) for c, c_name in zip(cols, cols_names)])
     # df_group = df_group.select('*', F.size(cols[0]).alias("Size"))
-    print(f"Groupes by ID: remains {df_group.count()} records")
+    
+    # print(f"Groupes by ID: remains {df_group.count()} records")
+
     # df_group = df_group.orderBy(df_group["Size"].desc())
     return df_group
 
@@ -82,7 +83,7 @@ def filter_big_time_step(rdd: RDD, min_step: float, max_step: float) -> RDD:
     rdd = rdd.filter(lambda r: r[1] >= min_step * 1000 and r[2] <= max_step * 1000) \
              .map(lambda r: r[0])  # remove from the record max and min steps
 
-    print(f"Applied filter on time steps of size {(min_step, max_step)}, remains {rdd.count()} records")
+    # print(f"Applied filter on time steps of size {(min_step, max_step)}, remains {rdd.count()} records")
     return rdd
     pass
 
@@ -155,7 +156,7 @@ def flatten_trips(rdd: RDD,
     # print(rdd.count())
     # print(rdd.take(1))
     rdd = rdd.flatMap(flatmap_split_trips)
-    print(f"Applied trips recognition, remains {rdd.count()} records")
+    # print(f"Applied trips recognition, remains {rdd.count()} records")
     return rdd
 
 
