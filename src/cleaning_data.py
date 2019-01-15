@@ -20,7 +20,7 @@ labels_names = ["Lat", "Long", "Time", "Alt", "Speed"]
 
 def filter_data(input_json: str):
     base_df = spark.read.json(input_json)
-    print(f"Loaded {input_json}: {base_df.count()} records")
+    # print(f"Loaded {input_json}: {base_df.count()} records")
     df = base_df.filter(base_df.Lat.isNotNull() & base_df.Long.isNotNull() &
                         base_df.PosTime.isNotNull() & base_df.GAlt.isNotNull() &
                         base_df.Spd.isNotNull())
@@ -51,10 +51,10 @@ def sort_by_time(rdd: RDD):
     def map_sort_time(record):
         alt, lat, long, speed, time = record.Alt, record.Lat, record.Long, record.Speed, record.Time
         # Magic sort in python
-        assert(len(time) == len(lat) == len(long) == len(speed) == len(alt))
+        # assert(len(time) == len(lat) == len(long) == len(speed) == len(alt))
         if len(time) > 0:
             time, alt, lat, long, speed = map(list, zip(*sorted(zip(time, alt, lat, long, speed))))
-        assert(sorted(time) == time)
+        # assert(sorted(time) == time)
         return Row(Icao=record.Icao,
                    Lat=lat,
                    Long=long,

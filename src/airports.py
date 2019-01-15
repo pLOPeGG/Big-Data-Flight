@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from scipy.spatial import cKDTree
-from typing import Dict, Tuple
 from haversine import haversine
 import time
 
@@ -55,9 +54,7 @@ def get_airports(file) -> pd.DataFrame:
     return air_info
 
 
-def get_european_airports() -> Tuple[Dict[Tuple[float, float], str],
-                                     np.ndarray,
-                                     AirportFinder]:
+def get_european_airports():
     air_info = get_airports("./data/GlobalAirportDatabase.csv")
 
     air_info = air_info[(air_info['Lat'] > 36) & (air_info['Lat'] < 70) &
