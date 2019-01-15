@@ -83,34 +83,34 @@ def compute_KD(points) -> cKDTree:
     return cKDTree(points)
 
 
-def benchmark():
-    air_dict, air_loc, air_finder = get_european_airports()
-
-    tree = compute_KD(air_loc)
-
-    beg = time.clock()
-    for x in np.linspace(40, 70, 100):
-        for y in np.linspace(-25, 40, 100):
-            point = [x, y]
-            af_airport = air_finder.closest_airport(point)
-    # print(f"AirportFinder took {time.clock()-beg}sec to run")
-
-    beg = time.clock()
-    for x in np.linspace(40, 70, 100):
-        for y in np.linspace(-25, 40, 100):
-            point = [x, y]
-            haversine_airport = air_loc[np.argmin(
-                [haversine(point, p) for p in air_loc])]
-    # print(f"Haversine function took {time.clock()-beg}sec to run")
-
-    beg = time.clock()
-    for x in np.linspace(40, 70, 100):
-        for y in np.linspace(-25, 40, 100):
-            point = [x, y]
-            _, index = tree.query([point])
-            tree_airport = tree.data[index[0]]
-    # print(f"cDKTree took {time.clock()-beg}sec to run")
-    pass
+# def benchmark():
+#     air_dict, air_loc, air_finder = get_european_airports()
+#
+#     tree = compute_KD(air_loc)
+#
+#     beg = time.clock()
+#     for x in np.linspace(40, 70, 100):
+#         for y in np.linspace(-25, 40, 100):
+#             point = [x, y]
+#             af_airport = air_finder.closest_airport(point)
+#     # print(f"AirportFinder took {time.clock()-beg}sec to run")
+#
+#     beg = time.clock()
+#     for x in np.linspace(40, 70, 100):
+#         for y in np.linspace(-25, 40, 100):
+#             point = [x, y]
+#             haversine_airport = air_loc[np.argmin(
+#                 [haversine(point, p) for p in air_loc])]
+#     # print(f"Haversine function took {time.clock()-beg}sec to run")
+#
+#     beg = time.clock()
+#     for x in np.linspace(40, 70, 100):
+#         for y in np.linspace(-25, 40, 100):
+#             point = [x, y]
+#             _, index = tree.query([point])
+#             tree_airport = tree.data[index[0]]
+#     # print(f"cDKTree took {time.clock()-beg}sec to run")
+#     pass
 
 
 def main():
