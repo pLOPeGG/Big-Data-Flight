@@ -21,17 +21,25 @@ class AirportFinder():
     Might not scale well with larger numbers!
     """
 
-    def __init__(self, airport_l: np.ndarray, max_height: float):
+    def __init__(self, airport_l: np.ndarray):
         super().__init__()
         self.deg_airport_l = airport_l
         self.airport_l = np.deg2rad(airport_l)
-        self.max_height = max_height
 
     def closest_airport(self, point: np.ndarray) -> np.ndarray:
         """ Finds the closest airport to the point
         @param point: array containing latitude and longitude in degree
         @return: closest airport coordinates in degree
         """
+        return tuple(self.deg_airport_l[np.argmin(self._relative_order_airports(point))])
+
+    def local_max_alt(self, point, air_dict, n=2) -> float:
+        airport_dist = self._relative_order_airports(point)
+        local_airport_indices = np.argpartition(airport_dist, n)
+        alts = np.array([air_dict[tuple(a)]["Alt"] for a in self.deg_airport_l])                                          
+        return max(np.max(alts[local_airport_indices[:n]]) * 1.5, 5000)
+
+    def _relative_order_airports(self, point: np.ndarray) -> np.ndarray:
         rad = np.deg2rad(point)
 
         lat = rad[0] - self.airport_l[:, 0]
@@ -39,9 +47,7 @@ class AirportFinder():
 
         add0 = np.cos(self.airport_l[:, 0]) * \
             np.cos(rad[0]) * np.sin(lng * 0.5) ** 2
-        d = np.sin(lat * 0.5) ** 2 + add0
-
-        return tuple(self.deg_airport_l[np.argmin(d)])
+        return np.sin(lat * 0.5) ** 2 + add0
 
 
 def get_airports(file) -> pd.DataFrame:
@@ -66,8 +72,7 @@ def get_european_airports() -> Tuple[Dict[Tuple[float, float], str],
                                  "Long": i[15]} for i in air_info.values}
 
     air_loc = np.array(air_info.values[:, 14:], dtype='float64')
-    air_finder = AirportFinder(air_loc, 
-                               max([v["Alt"] for v in air_dict.values()]) * 1.1)
+    air_finder = AirportFinder(air_loc)
 
     return air_dict, air_loc, air_finder
 
@@ -117,6 +122,7 @@ def main():
     point = [47.486541, 8.530039]
     print(air_dict[air_finder.closest_airport(point)])
     print(sorted([a["Alt"] for a in air_dict.values()]))
+    print(air_finder.local_max_alt(point, air_dict))
     pass
 
 
