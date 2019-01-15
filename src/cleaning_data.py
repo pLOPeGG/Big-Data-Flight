@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 # from mpl_toolkits.basemap import Basemap
 import itertools
+import argparse
 
 from airports import AirportFinder, get_european_airports
 
@@ -208,41 +209,19 @@ def get_clean_data(file) -> RDD:
 #     plt.show()
 
 
-def main():
-    file_json = "./data/2017-01-01/2017-01-01-*.json"
+def main():  
+    parser = argparse.ArgumentParser(description='Do stuff')
+    parser.add_argument('--path', '-p', default="./data/2017-01-01/2017-01-01-*.json",
+                        help='Path to json data files')
+    args = parser.parse_args()
+
+    file_json = args.path
+
     rdd = get_clean_data(file_json)
 
     print(rdd.take(20))
 
     # draw_records(rdd, 3)
-
-    """
-    record, min_step, max_step = rdd.take(1)[0]
-    print(record.Icao)
-
-    lat, long, time, alt, speed = record.Lat, record.Long, record.Time, record.Alt, record.Speed
-
-    m = Basemap(llcrnrlon=-30., llcrnrlat=30., urcrnrlon=40., urcrnrlat=75.,
-                rsphere=(6378137.00, 6356752.3142),
-                resolution='l', projection='merc',
-                lat_0=np.mean(lat), lon_0=np.mean(long), lat_ts=20.)
-
-    print(time[0])
-    for x1, x2 in zip(zip(lat[:-1], long[:-1], time[:-1], alt[:-1], speed[:-1]), 
-                      zip(lat[1:], long[1:], time[1:], alt[1:], speed[1:])):
-        lat1, long1, t1, alt1, s1 = x1
-        lat2, long2, t2, alt2, s2 = x2
-        print((lat1, long1, alt1, s1), (lat2, long2, alt2, s2), (t2-t1)/1000)
-        m.drawgreatcircle(long1, lat1, long2, lat2, linewidth=1, color='b')
-    print(time[-1])
-    m.drawcoastlines()
-    m.fillcontinents()
-    # draw parallels
-    m.drawparallels(np.arange(10, 90, 5), labels=[1, 1, 0, 1])
-    # draw meridians
-    m.drawmeridians(np.arange(-180, 180, 10), labels=[1, 1, 0, 1])
-    plt.show()
-    """
     pass
 
 
