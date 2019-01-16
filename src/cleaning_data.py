@@ -137,8 +137,8 @@ def flatten_trips(rdd: RDD,
                                                                [airport.local_max_alt(pos, air_info) for pos in zip(lat, long)])])
 
         split_indices = [i for i, (a, b, c) in enumerate(zip(np.gradient(np.sign(np.gradient(alt))) > 0,
-                                                          np.gradient(np.sign(np.gradient(talt))) >= 0,
-                                                          local_alt_bool))
+                                                             np.gradient(np.sign(np.gradient(talt))) >= 0,
+                                                             local_alt_bool))
                          if a and b and c]
 
         # TODO: Here compute distance airport - position and validate the landing.
