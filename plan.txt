@@ -32,4 +32,18 @@ II./ Process
 			- A trip never link an airport to itself
 
 III./ Results
+	a) Trajectory efficiency
+		- Overall
+		- During the flight (efficiency / percentage of the flight graph)
+	b) IDEAS
 IV./ Data Quality	
+	a) General quality: 
+		- Missing values -> Lat, Long
+		- Spurious values -> Gnd, Alt
+		- Incoherences -> staying at the same position for minutes while 30 000 feet high
+	b) Quality statistics
+		- 34000 trips idetified (before additional splits)
+		- 54000 trips after additional splits (due to missing point and black out)
+		- 5000 trips never black out more than 1000 sec.
+			|_> Quality trips HERE. 
+

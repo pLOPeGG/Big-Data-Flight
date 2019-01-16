@@ -26,7 +26,9 @@ def read_files(path):
 def pre_process_trips(rdd,
                       airport,
                       air_info):
-                      
+    """ This function is useless as most of the new trips are nonsense.
+    Use filter_missing_points instead that provide good quality trips only.
+    """
     thre = 2000 * 1000  # 2000 sec
 
     def split_trips(record,
@@ -38,8 +40,7 @@ def pre_process_trips(rdd,
         split_i = [i for i, v in enumerate(split_b) if v]
 
         couples = []
-        
-        
+
         if len(split_i) > 1:
             couples = [(i, j) for i, j in zip(split_i[:-1], split_i[1:])]
             couples = [(0, split_i[0])] + couples[:] + [(split_i[-1], len(time))]
@@ -60,7 +61,7 @@ def pre_process_trips(rdd,
 
             if air_from == air_to:
                 continue
-            
+       
             row = Row(Icao=record.Icao,
                       Op=record.Op,
                       Engines=record.Engines,
@@ -84,15 +85,24 @@ def pre_process_trips(rdd,
     pass
 
 
+def filter_missing_points(rdd):
+    threshold = 1000 * 1000  # 1000 seconds MAXIMUM
+    return rdd.filter(lambda r, t=threshold: all(np.diff(r.Time) < t))
+
+
 def main():
+    seed = 0
     air_dict, air_loc, air_finder = get_european_airports()  # All info about airports
     rdd = read_files("data/save_jan/part-*")
-    rdd = pre_process_trips(rdd, air_finder, air_dict)
+    # print(rdd.count())  # -> 35000 trips
 
-    print(rdd.count())
-    print(rdd.filter(lambda r: not r.Mod).count())
+    # rdd = pre_process_trips(rdd, air_finder, air_dict)  # -> 54000 trips
+    # print(rdd.filter(lambda r: not r.Mod).count())  # -> 6400 trips (thre = 2000sec)
+
+    rdd = filter_missing_points(rdd)
+    # print(rdd.count())  # -> 5625 trips (thre = 1000sec)
     
-    plotting_data.draw_records(rdd, -1, colors="k", alpha=0.4)
+    plotting_data.draw_records(rdd, 500, colors="k", alpha=0.1, seed=seed)
     pass
 
 
