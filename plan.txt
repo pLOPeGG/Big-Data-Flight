@@ -1,0 +1,35 @@
+Presentation Big Data:
+
+Topic: Plane trajectory efficiency
+
+I./ Data
+	a) ADS-B data
+		- Fields
+		- How it's obtained
+		- Our data -> 2017 / jan
+	b) Airports
+		- Fields
+		- Who provides it -> http://www.partow.net/miscellaneous/airportdatabase/index.html#Downloads
+
+II./ Process
+	a) Filtering
+		- Missing values
+		- Europe only
+		- Value missmatch
+	b) Splitting in trips
+		- Preparation:
+			- Grouping by plane ICAO (ID)
+			- Sorting by time
+		- Discovering splitting points:
+			- Altitude is at a local minimum
+			- Target Altitude is on a constant OR local minimum point
+			- Target Altitude (onboard computer) is set on a value lower than the cruising value
+			- Threshold computed on nearby airports maximum altitude is higher than plane's altitude
+		- Additionnal splits:
+			- When timestep separating two sequential points is greater than a threshold (half an hour) -> split
+		- Post process:
+			- Identify starting airport and ending airport
+			- A trip never link an airport to itself
+
+III./ Results
+IV./ Data Quality	
