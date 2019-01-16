@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from scipy.spatial import cKDTree
-from haversine import haversine
+# from haversine import haversine
 import time
 
 # Data for the airports can be found at "http://www.partow.net/downloads/GlobalAirportDatabase.zip"
