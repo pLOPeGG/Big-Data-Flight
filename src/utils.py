@@ -1,10 +1,10 @@
 
 import numpy as np
 
-AVG_EARTH_RADIUS = 6_371_009.
+AVG_EARTH_RADIUS = 6_365_632.  # At latitude 50°
 
 
-def vectorized_haversine(from_l: np.ndarray, to_l: np.ndarray):
+def vectorized_haversine(from_l: np.ndarray, to_l: np.ndarray) -> np.ndarray:
     """ Code from StackOverflow: 
     https://stackoverflow.com/questions/44681828/efficient-computation-of-minimum-of-haversine-distances
     """
@@ -21,8 +21,8 @@ def vectorized_haversine(from_l: np.ndarray, to_l: np.ndarray):
 
 
 def main():
-    print(vectorized_haversine(np.array([[0, 0], [1, 1], [45, 5]]),
-                               np.array([[1, 1], [0, 0], [45.5, 4.2]])))
+    print(vectorized_haversine(np.array([[47.461349, 8.480347], [47.427047, 8.406231]]),
+                               np.array([[47.427047, 8.406231], [47.414154, 8.287537]])))
     pass
 
 

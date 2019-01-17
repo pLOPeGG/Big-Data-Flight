@@ -3,6 +3,7 @@ import numpy as np
 from pyspark.sql import Row
 import plotting_data
 
+from utils import vectorized_haversine
 from airports import get_european_airports
 
 sc = SparkContext()
@@ -15,7 +16,7 @@ def read_files(path):
         # Some NAN are inside the record
         record = str(record).replace('nan', '0000')
 
-        loc = {'Row': Row}
+        loc = {'Row': Row, 'array': np.array}
         exec('r = ' + record, globals(), loc)
         return loc['r']
 
@@ -90,10 +91,26 @@ def filter_missing_points(rdd):
     return rdd.filter(lambda r, t=threshold: all(np.diff(r.Time) < t))
 
 
-def main():
-    seed = 0
+def trip_len(rdd):
+    def map_trip_len(record):
+        lat, long = record.Lat, record.Long
+        from_airport, to_airport = record.From, record.To
+        lat = [from_airport['Lat']] + lat + [to_airport['Lat']]
+        long = [from_airport['Long']] + long + [to_airport['Long']]
+        pos = np.concatenate((lat, long)).reshape(2, -1).T
+        dist = vectorized_haversine(pos[:-1, :], pos[1:, :]).tolist()
+
+        temp = record.asDict()
+        temp["Dist"] = dist
+        record = Row(**temp)
+
+        return record
+    return rdd.map(map_trip_len)
+
+
+def get_trips(file):
     air_dict, air_loc, air_finder = get_european_airports()  # All info about airports
-    rdd = read_files("data/save_jan/part-*")
+    rdd = read_files(file)
     # print(rdd.count())  # -> 35000 trips
 
     # rdd = pre_process_trips(rdd, air_finder, air_dict)  # -> 54000 trips
@@ -101,8 +118,23 @@ def main():
 
     rdd = filter_missing_points(rdd)
     # print(rdd.count())  # -> 5625 trips (thre = 1000sec)
-    
-    plotting_data.draw_records(rdd, 500, colors="k", alpha=0.1, seed=seed)
+
+    rdd = trip_len(rdd)
+    return rdd
+
+
+def main():
+
+    # rdd = sc.textFile("data/processed/part-*")
+    # print(rdd.take(1))
+
+    seed = 0
+    files = "data/save_jan/part-*"
+    rdd = get_trips(files)
+
+    rdd.saveAsTextFile("data/processed")
+
+    # plotting_data.draw_records(rdd, 500, colors="k", alpha=0.1, seed=seed)
     pass
 
 

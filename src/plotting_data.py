@@ -2,6 +2,7 @@ from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 import numpy as np
 import itertools
+from pyspark import RDD
 
 
 def draw_records(rdd, n: int, colors="bgrcmy", alpha=1, seed=0):
@@ -15,7 +16,10 @@ def draw_records(rdd, n: int, colors="bgrcmy", alpha=1, seed=0):
 
     colors = itertools.cycle(colors)
 
-    collection = rdd.takeSample(False, n, seed) if n >= 0 else rdd.collect()
+    if type(rdd) == RDD:
+        collection = rdd.takeSample(False, n, seed) if n >= 0 else rdd.collect()
+    else:
+        collection = rdd[:n] if n >= 0 else rdd
 
     for i, (c, record) in enumerate(zip(colors, collection)):
         print("{} over {}".format(i, len(collection)))
