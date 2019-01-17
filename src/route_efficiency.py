@@ -29,11 +29,19 @@ def filter_missing_points(rdd):
 def main():
     rdd = read_files("file:///home/s1493299/save_jan/part-*")
     rdd = filter_missing_points(rdd)
-    rdd = rdd.map(lambda x: ((x.From['Code'], x.To['Code']), [(lat, long) for lat, long in zip(x.Lat, x.Long)]))
-    rdd = rdd.map(lambda x: (x[0], {sum([haversine(old, new) for old, new in zip(x[1][:-1], x[1][1:])]) /
-                             haversine(x[1][0], x[1][-1])}))
-    rdd = rdd.reduceByKey(lambda x, y: set.union(x, y))  # use groupby depending on final use
-    print(rdd.take(10))
+    rdd = rdd.map(lambda x: ((x.From['Code'], x.To['Code'], x.Op), [(lat, long) for lat, long in zip(x.Lat, x.Long)]))
+    rdd = rdd.map(lambda x: (x[0], sum([haversine(old, new) for old, new in zip(x[1][:-1], x[1][1:])]) /
+                             haversine(x[1][0], x[1][-1])))
+    if __name__ == '__main__':
+        rdd_by_op = rdd.map(lambda x: (x[0][2], (x[1], 1)))\
+            .reduceByKey(
+            lambda x, y: (x[0] + y[0], x[1] + y[1])
+
+        )\
+            .map(lambda x: (x[0], x[1][0] / x[1][1], x[1][1]))\
+            .sortBy(lambda x: x[1], ascending=False)
+    # rdd = rdd.reduceByKey(lambda x, y: set.union(x, y))  # use groupby depending on final use
+    print(rdd_by_op.take(100))
     pass
 
 
