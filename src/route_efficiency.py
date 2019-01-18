@@ -60,18 +60,13 @@ def flight_efficiency_per_route_per_company(rdd):
     rdd = flight_efficiency(rdd) \
         .map(lambda x: (x[0], (x[1], 1))) \
         .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
-        .map(lambda x: (x[0][:2], [(x[0][2], x[1][0] / x[1][1])])) \
+        .map(lambda x: (x[0][:2], [(x[0][2], x[1][0] / x[1][1])]))\
         .reduceByKey(lambda x, y: x+y)\
         .map(lambda x: sorted(x[1], key=lambda y: y[1])) \
-        .flatMap(lambda x: [(val[0].lower(), val[1] / (sum(e[1] for e in x)/len(x))) for val in x])\
-        .reduceByKey(lambda x, y: x+y)\
+        .flatMap(lambda x: [(val[0].lower(), (val[1] / (sum(e[1] for e in x)/len(x)), 1)) for val in x])\
+        .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1]))\
+        .map(lambda x: (x[0], x[1][0]/x[1][1]))\
         .sortBy(lambda x: x[1])
-
-        # .map(lambda x: [(v[0], i) for i, v in enumerate(x)])
-        # .flatMap(lambda x: x[1])
-        # .mapValues(lambda x: sum(i[1]))
-
-    lst = rdd.collect()
 
     return rdd
 
@@ -88,13 +83,16 @@ def main():
     rdd = read_files("./data/save_jan/part-*")
     rdd = filter_short_routes(filter_missing_points(rdd))
 
-    # print(flight_efficiency_per_company(rdd).take(20))
-    newrdd = flight_efficiency_per_route(rdd)
-    # print(newrdd.take(1))
-    # print(newrdd.take(1)[0][1])
-
     # plot_records(flight_efficiency_per_company(rdd))
-    records = flight_efficiency_per_route_per_company(rdd).take(100)
+
+    comp = flight_efficiency_per_company(rdd).take(20)
+    comps = {x[0].lower() for x in comp}
+
+    records = flight_efficiency_per_route_per_company(rdd) \
+        .filter(lambda x: x[0] in comps) \
+        .collect()
+    for rec in comp:
+        print(rec)
     for rec in records:
         print(rec)
 
