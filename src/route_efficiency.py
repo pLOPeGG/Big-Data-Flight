@@ -2,10 +2,9 @@ from pyspark import SparkContext
 import numpy as np
 from pyspark.sql import Row
 from haversine import haversine
+from matplotlib import pyplot as plt
 
 sc = SparkContext()
-sc.addPyFile('src/utils.py')
-sc.addPyFile('src/airports.py')
 
 
 def read_files(path):
@@ -26,9 +25,14 @@ def filter_missing_points(rdd):
     return rdd.filter(lambda r, t=threshold: all(np.diff(r.Time) < t))
 
 
+def filter_short_routes(rdd):
+    """ filter out routes shorter than 100 km, they mostly go from a city towards the same city"""
+    return rdd.filter(lambda x: haversine((x.From['Lat'], x.From['Long']), (x.To['Lat'], x.To['Long'])) > 100)
+
+
 def flight_efficiency(rdd):
     """ Flight efficiency as traveled distance divided by optimal distance """
-    rdd = rdd.map(lambda x: ((x.From['Code'], x.To['Code'], x.Op), [(lat, long) for lat, long in zip(x.Lat, x.Long)]))\
+    rdd = rdd.map(lambda x: (((x.From['Lat'], x.From['Long']), (x.To['Lat'], x.To['Long']), x.Op), [(lat, long) for lat, long in zip(x.Lat, x.Long)]))\
         .map(lambda x: (x[0], sum([haversine(old, new) for old, new in zip(x[1][:-1], x[1][1:])]) /
                         haversine(x[1][0], x[1][-1])))
     return rdd
@@ -47,16 +51,52 @@ def flight_efficiency_per_route(rdd):
     rdd_by_route = flight_efficiency(rdd)\
         .map(lambda x: (x[0][0:2], (x[1], 1))) \
         .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
-        .map(lambda x: (x[0], x[1][0] / x[1][1], x[1][1]))
+        .map(lambda x: (x[0], x[1][0] / x[1][1], x[1][1])) \
+        .sortBy(lambda x: x[2], ascending=False)
     return rdd_by_route
 
 
-def main():
-    rdd = read_files("file:///home/s1493299/save_jan/part-*")
-    rdd = filter_missing_points(rdd)
+def flight_efficiency_per_route_per_company(rdd):
+    rdd = flight_efficiency(rdd) \
+        .map(lambda x: (x[0], (x[1], 1))) \
+        .reduceByKey(lambda x, y: (x[0] + y[0], x[1] + y[1])) \
+        .map(lambda x: (x[0][:2], [(x[0][2], x[1][0] / x[1][1])])) \
+        .reduceByKey(lambda x, y: x+y)\
+        .map(lambda x: sorted(x[1], key=lambda y: y[1])) \
+        .flatMap(lambda x: [(val[0].lower(), val[1] / (sum(e[1] for e in x)/len(x))) for val in x])\
+        .reduceByKey(lambda x, y: x+y)\
+        .sortBy(lambda x: x[1])
 
-    print(flight_efficiency_per_company(rdd).take(20))
-    print(flight_efficiency_per_route(rdd).take(200))
+        # .map(lambda x: [(v[0], i) for i, v in enumerate(x)])
+        # .flatMap(lambda x: x[1])
+        # .mapValues(lambda x: sum(i[1]))
+
+    lst = rdd.collect()
+
+    return rdd
+
+
+def plot_records(rdd):
+    result = rdd.filter(lambda x: x[1] < 2).map(lambda x: x[1:]).collect()
+    flights, efficiency = zip(*result)
+    plt.plot(flights, efficiency, 'o')
+    plt.show()
+
+
+
+def main():
+    rdd = read_files("./data/save_jan/part-*")
+    rdd = filter_short_routes(filter_missing_points(rdd))
+
+    # print(flight_efficiency_per_company(rdd).take(20))
+    newrdd = flight_efficiency_per_route(rdd)
+    # print(newrdd.take(1))
+    # print(newrdd.take(1)[0][1])
+
+    # plot_records(flight_efficiency_per_company(rdd))
+    records = flight_efficiency_per_route_per_company(rdd).take(100)
+    for rec in records:
+        print(rec)
 
 
 if __name__ == '__main__':
